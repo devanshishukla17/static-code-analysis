@@ -1,60 +1,64 @@
 import json
-import logging
 from datetime import datetime
 
 stock_data = {}
 
-def addItem(item="default", qty=0, logs=[]):
-    if not item:
+def add_item(item: str = "default", qty: int = 0, logs=None):
+    if logs is None:
+        logs = []
+    if not item or not isinstance(qty, int):
         return
     stock_data[item] = stock_data.get(item, 0) + qty
-    logs.append("%s: Added %d of %s" % (str(datetime.now()), qty, item))
+    logs.append(f"{datetime.now()}: Added {qty} of {item}")
 
-def removeItem(item, qty):
+
+def remove_item(item: str, qty: int):
     try:
         stock_data[item] -= qty
         if stock_data[item] <= 0:
             del stock_data[item]
-    except:
-        pass
+    except KeyError:
+        print(f"Warning: {item} not found in stock.")
 
-def getQty(item):
-    return stock_data[item]
 
-def loadData(file="inventory.json"):
-    f = open(file, "r")
+def get_qty(item: str) -> int:
+    return stock_data.get(item, 0)
+
+
+def load_data(file: str = "inventory.json"):
     global stock_data
-    stock_data = json.loads(f.read())
-    f.close()
+    try:
+        with open(file, "r", encoding="utf-8") as f:
+            stock_data = json.load(f)
+    except FileNotFoundError:
+        stock_data = {}
 
-def saveData(file="inventory.json"):
-    f = open(file, "w")
-    f.write(json.dumps(stock_data))
-    f.close()
 
-def printData():
+def save_data(file: str = "inventory.json"):
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(stock_data, f, indent=4)
+
+
+def print_data():
     print("Items Report")
-    for i in stock_data:
-        print(i, "->", stock_data[i])
+    for item, quantity in stock_data.items():
+        print(f"{item} -> {quantity}")
 
-def checkLowItems(threshold=5):
-    result = []
-    for i in stock_data:
-        if stock_data[i] < threshold:
-            result.append(i)
-    return result
+
+def check_low_items(threshold: int = 5):
+    return [item for item, qty in stock_data.items() if qty < threshold]
+
 
 def main():
-    addItem("apple", 10)
-    addItem("banana", -2)
-    addItem(123, "ten")
-    removeItem("apple", 3)
-    removeItem("orange", 1)
-    print("Apple stock:", getQty("apple"))
-    print("Low items:", checkLowItems())
-    saveData()
-    loadData()
-    printData()
-    eval("print('eval used')")
+    add_item("apple", 10)
+    add_item("banana", 3)
+    remove_item("apple", 3)
+    remove_item("orange", 1)
+    print("Apple stock:", get_qty("apple"))
+    print("Low items:", check_low_items())
+    save_data()
+    load_data()
+    print_data()
 
-main()
+if __name__ == "__main__":
+    main()
